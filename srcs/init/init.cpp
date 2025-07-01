@@ -65,3 +65,76 @@ int init_time_stepping(int itstp, int itmax, double dt, double cf,
         return 0; // 終了を示す
     return 1; // 続行を示す
 }
+
+// 単一ブロブ摂動を初期化する:
+void init_add_blob( AXY ne, AXY ni )
+{
+  int i, j, ixloc;
+  double dr = wsrc*wsrc;
+
+  printf("| ブロブ初期条件...\n");
+  ixloc = nxh;
+#pragma omp parallel for private(i,j)
+  for (i=0; i<=nx1; ++i) 
+  {
+    for (j=0; j<=ny1; ++j) 
+    {
+      ne[i][j] += amp*( exp(-(i-ixloc)*(i-ixloc)/dr)*exp(-(j-nyh)*(j-nyh)/dr) );
+      ni[i][j] = ne[i][j];
+    }
+  }   
+  if (vorfree==1.) { poisson(ne,cvfis,ni); }
+} // init_add_blob 関数の終了
+
+// 二重渦摂動を初期化する:
+void init_add_dual( AXY ne, AXY ni )
+{
+  int i, j, ixloc;
+  double dr = wsrc*wsrc;
+  double elong = 1.0; // 例: elong=1 で円形
+  double dry = elong*dr;
+  double xxx1, xxx2, vorset;
+  printf("| 合体初期条件...\n");
+
+  vorset = 0.01; // ジャイロ密度差から渦度を定義するため
+  g_n = 0.; // 背景密度勾配なし
+  ixloc = nxh;
+#pragma omp parallel for private(i,j,pdist,xxx1,xxx2)
+  for (i=0; i<=nx1; ++i)
+  {
+    for (j=0; j<=ny1; ++j)
+    {
+      pdist = 4.0*wsrc; // ここで距離を設定、例: 4*wsrc
+      xxx1 = (i-ixloc -0.5*pdist);
+      xxx2 = (i-ixloc +0.5*pdist);
+      ne[i][j] += +amp*( exp(-xxx1*xxx1/dr)*exp(-(j-ny1*1/2)*(j-ny1*1/2)/dry) );
+      ne[i][j] += +amp*( exp(-xxx2*xxx2/dr)*exp(-(j-ny1*1/2)*(j-ny1*1/2)/dry) );
+    }
+  }
+  for (i=0; i<=nx1; ++i)
+  {
+    for (j=0; j<=ny1; ++j)
+        ni[i][j] = (1.-vorset)*aai*ne[i][j];
+  }
+
+} // init_add_dual 関数の終了
+
+// シアー流摂動を初期化する:
+void init_add_flow( AXY ne, AXY ni )
+{
+  int i, j, ixloc = nxh;
+  printf("| シアー流初期条件...\n");
+
+  g_n = 0.; 
+  chat = 0.; // 背景密度勾配なし、HW 駆動なし
+#pragma omp parallel for private(i,j)
+  for (i=0; i<=nx1; ++i)
+  {
+    for (j=0; j<=ny1; ++j)
+    {
+      ne[i][j] = amp*cos(TwoPi*1.*double(i-nxh)/double(nx));
+      ne[i][j]+= amp*0.001*sin(TwoPi*5.*double(j)/double(ny));
+      ni[i][j] = 0.;
+    }
+  }
+} // init_add_flow 関数の終了

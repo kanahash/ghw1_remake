@@ -25,6 +25,7 @@ static double trace_p_global[MAX_TRACE_K_MAX_SQRT * MAX_TRACE_K_MAX_SQRT][MAX_TR
 #include <cmath>    // C++スタイルの C標準数学関数ヘッダー (math.h に対応)
 #include <cstring>  // C++スタイルの C文字列関数ヘッダー (string.h に対応)
 #include <fftw3.h>  // FFTW (Fastest Fourier Transform in the West) ライブラリ
+#include <stdbool.h>
 
 // 静的定数の定義:
 const static double TwoPi = 2. * M_PI, r12 = 1. / 12.; // 円周率の2倍と1/12
@@ -176,6 +177,29 @@ inline double timer_stop(double t_1)
     return (t_2 - t_1);
 }
 
+typedef struct {
+    // ... 既存のパラメータ ...
+
+    // 新しく追加する派生パラメータ
+    // bool printtraces; // 必要であれば追加
+    int nxh;
+    int nyh;
+    int nx1;
+    int ny1;
+    double hy2;
+    double hysq;
+    double g_n;
+    double xyz;
+
+    // 平均値配列は、構造体に入れるのではなく、別途動的に確保してポインタを渡すのが一般的
+    // double* pkxavg;
+    // double* pkyavg;
+    // ...など
+    // ただし、これらの配列はシミュレーションのメインループで継続的に使われるため、
+    // ここで初期化するよりも、メインのシミュレーションデータ構造の一部として管理する方が適切かもしれません。
+
+} HWParameters;
+
 //init
 //init.potential.cpp
 void init_FFTW(int nx, int ny, unsigned int fflag, int npar,
@@ -184,6 +208,8 @@ void init_energy(AXY ne, double xyz, double& eno);
 int init_time_stepping(int itstp, int itmax, double dt, double cf,
                            int& itn, int& itend, double& dtt, double& ddtt,
                            int& itrace, int& jtrace);
+void initialize_output_files(int incon_param);
+void initialize_average_arrays(int nx_param, int ny_param, double* pkxavg, double* pkyavg, double* pkyavgn, double* pkyavgw, double* pkyavge);
 
 //ghw1.cpp
 //main.cpp
@@ -233,6 +259,9 @@ void calculate_gyro_shielded_potential(AXY pe_in, AXY pi_out,
 
 //FFT.cpp
 void perform_time_trace_analysis(int maxtrace, int k_max, double t00, double dt, int itmax, int ntrace);
+
+//derived_parameters.cpp
+void derived_parameters_calculate(HWParameters* params);
 
 //utils
 //utils_time.cpp
