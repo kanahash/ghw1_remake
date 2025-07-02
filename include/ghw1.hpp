@@ -177,39 +177,25 @@ inline double timer_stop(double t_1)
     return (t_2 - t_1);
 }
 
-typedef struct {
-    // ... 既存のパラメータ ...
-
-    // 新しく追加する派生パラメータ
-    // bool printtraces; // 必要であれば追加
-    int nxh;
-    int nyh;
-    int nx1;
-    int ny1;
-    double hy2;
-    double hysq;
-    double g_n;
-    double xyz;
-
-    // 平均値配列は、構造体に入れるのではなく、別途動的に確保してポインタを渡すのが一般的
-    // double* pkxavg;
-    // double* pkyavg;
-    // ...など
-    // ただし、これらの配列はシミュレーションのメインループで継続的に使われるため、
-    // ここで初期化するよりも、メインのシミュレーションデータ構造の一部として管理する方が適切かもしれません。
-
-} HWParameters;
 
 //init
-//init.potential.cpp
+//init.cpp
 void init_FFTW(int nx, int ny, unsigned int fflag, int npar,
                     fftw_plan& hinp, fftw_plan& herp, char*& wisdom_sf);
 void init_energy(AXY ne, double xyz, double& eno);
 int init_time_stepping(int itstp, int itmax, double dt, double cf,
                            int& itn, int& itend, double& dtt, double& ddtt,
                            int& itrace, int& jtrace);
-void initialize_output_files(int incon_param);
-void initialize_average_arrays(int nx_param, int ny_param, double* pkxavg, double* pkyavg, double* pkyavgn, double* pkyavgw, double* pkyavge);
+void init_add_blob( AXY ne, AXY ni );
+void init_add_dual( AXY ne, AXY ni );
+void init_add_flow( AXY ne, AXY ni );
+void init_add_mode( AXY ne, AXY ni );
+//init_output_and_arrays.cpp
+void init_output_and_arrays(int nx, int ny, int incon, bool printtraces);
+//init_parameters.cpp
+void init_parameters(void);
+//init_add_turb.cpp
+void init_add_turb( AXY ne, AXY ni );
 
 //ghw1.cpp
 //main.cpp
@@ -257,11 +243,12 @@ void calculate_gyro_shielded_potential(AXY pe_in, AXY pi_out,
                                        const AXY cpoti_coeff, double taui_param,
                                        int nx_max, int ny_max, int ny_padded);
 
+//precompute_fftw_coefficients.cpp
+void precompute_fftw_coefficients(int nx, int ny, int nxh, int nyh, double hy, double taui, double mue, double taue, double mui, double aae, double aai, int ipade, bool xlwl);
+
 //FFT.cpp
 void perform_time_trace_analysis(int maxtrace, int k_max, double t00, double dt, int itmax, int ntrace);
 
-//derived_parameters.cpp
-void derived_parameters_calculate(HWParameters* params);
 
 //utils
 //utils_time.cpp

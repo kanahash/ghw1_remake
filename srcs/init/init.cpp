@@ -138,3 +138,40 @@ void init_add_flow( AXY ne, AXY ni )
     }
   }
 } // init_add_flow 関数の終了
+
+// 線形単一 ky モードを初期化する
+void init_add_mode( AXY ne, AXY ni )
+{
+  int i, j;
+  printf("| 単一 ky モード初期条件...\n");
+
+  // ここで par[6]=sigma はモード数 (rho_s ky) である。
+  // Ly は周期性 (初期化で実行される; m=1, ...) を得るために m*TwoPi*sigma に設定される！
+  clin = 0.;
+#pragma omp parallel for private(i,j)
+  for (i=0; i<=nx1; ++i) for (j=0; j<=ny1; ++j)
+   {
+      ne[i][j] = amp*sin(sigma*double(j)/hy);
+      // ne[i][j]*= sin(TwoPi*0.5*double(i)/double(nx)); // (kx!=0 の場合)
+      ni[i][j] = 0.;
+    }
+
+  // kx=0 の解析的分散関係を書き出す (cf. Camargo 95)
+  // "diagnose" で計算された周波数および成長率と比較するため:
+  /*
+  double ky, a_omr, a_gam, a_sig, a_lam0, a_lam1, a_aaa, a_bbb;
+  f = fopen("formula-gamma.dat", "w");
+  for (i=1; i<=1000; ++i) {
+    ky = 0.01*double(i);
+    a_lam0 = chat*(1.+ky*ky)/(ky*ky);
+    a_lam1 = 2.*diff*pow(ky,4.);
+    a_sig = chat/ky;
+    a_aaa = a_lam0/(sqrt(2.)*2.);
+    a_bbb = sqrt(1.+16.*a_sig*a_sig/(a_lam0*a_lam0*a_lam0*a_lam0));
+    a_omr = a_aaa*sqrt(a_bbb - 1.);
+    a_gam = - .5*(a_lam0+a_lam1) + a_aaa*sqrt(a_bbb + 1.);
+    fprintf(f,"%.3e  %.3e  %.3e \n",ky,a_omr,a_gam);
+  }
+  fclose(f);
+  */
+} // init_add_mode 関数の終了
