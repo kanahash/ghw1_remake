@@ -249,6 +249,19 @@ void precompute_fftw_coefficients(int nx, int ny, int nxh, int nyh, double hy, d
 //FFT.cpp
 void perform_time_trace_analysis(int maxtrace, int k_max, double t00, double dt, int itmax, int ntrace);
 
+//energy_and_transport_calculate.cpp
+void calculate_energies_and_transport(double& enn, double& enp, double& enw, double& eeb, double& ezf, double& fne,
+                                      double& etran_grad, double& etran_adia, double& etran_visc,
+                                      AXY n_e, AXY n_i, AXY p_p, double lap[][nym],
+                                      double avg[], double avp[], double hy, double taui,
+                                      AXY pe, AXY pi, bool b_mhw, double chat, double diff,
+                                      AXY hyve, AXY hyvi, int nx1, int ny1);
+
+//linear_growth_and_frequency_calculate.cpp
+void calculate_linear_growth_and_frequency(double ttt, double dt, int it, int itmax, int incon,
+                                           double& freq, double& grow,
+                                           AXY p_p, double& t_amp, double& t_old, int& jsgn, int& jsgn_old,
+                                           double& ddtt, double& enw, double& enwo, int nxh, int nyh);
 
 //utils
 //utils_time.cpp
@@ -265,6 +278,15 @@ void collect_time_trace_data(double ttt_in, AXY ne_in, AXY pe_in,
                              int& current_itrace, int& current_jtrace, int ntrace_interval,
                              double& td_out_total, double& t_start_measure,
                              bool printtraces_flag);
+void write_global_outputs(double ttt, double enn, double eeb, double ezf,
+                          double etran_grad, double etran_adia, double etran_visc, double etran_tot,
+                          double fne);
+void write_zonal_flow_data(double ttt, AXY p_p, int nx1, int ny1, double hy);
+void write_x_cut_data(AXY n_e, AXY n_i, AXY p_p, double lap[][nym], AXY n_g, int nx1, int nyh, double hy);
+void write_y_cut_data(AXY n_e, AXY n_i, AXY p_p, double lap[][nym], AXY n_g, int ny1, int nxh, double hy);
+void write_x_profile_data(AXY p_p, AXY n_e, AXY n_i, double lap[][nym],
+                          int nx1, int ny1, double hy, int ny);
+void write_2d_plot_data(AXY n_e, AXY p_p, double lap[][nym], int nx1, int ny1);
 
 int	main(void);
 

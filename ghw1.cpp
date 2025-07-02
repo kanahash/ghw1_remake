@@ -91,9 +91,11 @@ void diagnose( double ttt, double t00, int it, int itmax,
 
 #pragma omp parallel for private(j) shared(avg,avp)
   for (i=0; i<=nx1; i++) // ne と phi の帯状平均
-    { avg[i] = 0.; avp[i] = 0.;
-      for (j=0; j<=ny1; j++) {avg[i] += n_e[i][j]; avp[i] += p_p[i][j];}
-      avg[i]/=ny; avp[i]/=ny;
+    { 
+		avg[i] = 0.; avp[i] = 0.;
+      	for (j=0; j<=ny1; j++)
+			avg[i] += n_e[i][j]; avp[i] += p_p[i][j];
+      	avg[i]/=ny; avp[i]/=ny;
     }
   enn = 0.; enp = 0.; enw = 0.; eeb = 0.; ezf = 0.; fne = 0.;
   etran_grad = 0.; etran_adia= 0.; etran_visc = 0.;
@@ -102,48 +104,13 @@ void diagnose( double ttt, double t00, int it, int itmax,
   // laplace(p_p,lap);
   poisson(p_p,clap,lap);
 
-  // エネルギー量と輸送
-#pragma omp parallel for private(j,ip,dum) reduction(+:enn,ezf,eeb,fne,enw,etran_grad,etran_adia,etran_visc)
-  for (i=0; i<=nx1; i++) {
-    ip = (i==nx1) ? 0   : i+1;
-
-    for (j=0; j<=ny1; j++) {
-
-      // 全熱自由エネルギー:
-      enn += n_e[i][j]*n_e[i][j] + taui*n_i[i][j]*n_i[i][j];
-
-      // (主に帯状) 流れのエネルギー:
-      dum = hy*(avp[ip]-avp[i]);
-      ezf += dum*dum;
-
-      // 乱流エントロフィー:
-      enw += lap[i][j]*lap[i][j];
-
-      // 全運動エネルギー:
-      dum = DFDY(p_p,i,j);
-      eeb += dum*dum;
-      dum = DFDX(p_p,i,j);
-      eeb += dum*dum;
-
-      // 電子 ExB 粒子輸送:
-      fne += - n_e[i][j]*DFDY(p_p,i,j);
-
-      // 勾配駆動 / 転送:
-      etran_grad+= - n_e[i][j]*DFDY(pe,i,j);
-      etran_grad+= - n_i[i][j]*DFDY(pi,i][j])*taui;
-
-      // 「並列」抵抗散逸シンク / 転送:
-      dum = pe[i][j] - n_e[i][j];
-      if (b_mhw) dum-= avp[i] - avg[i];
-      etran_adia+= -chat*dum*dum;
-
-      // 垂直ハイパー粘性シンク / 転送:
-      dum = hyve[i][j]*(pe[i][j] - n_e[i][j]);
-      dum-= hyvi[i][j]*(pi[i][j] + taui*n_i[i][j]);
-      etran_visc+= diff*dum;
-
-    }
-  }
+   // エネルギー量と輸送
+  calculate_energies_and_transport(enn, enp, enw, eeb, ezf, fne,
+                                   etran_grad, etran_adia, etran_visc,
+                                   n_e, n_i, p_p, lap,
+                                   avg, avp, hy, taui,
+                                   pe, pi, b_mhw, chat, diff,
+                                   hyve, hyvi, nx1, ny1);
 
   enn *= .5*xyz; enp *= xyz; enw *= .5*xyz; eeb *= .5*xyz; ezf *= .5*xyz;
   if (enw==0.) enw=1.e-12; if (ezf==0.) ezf=1.e-12; if (eeb==0.) eeb=1.e-12;
@@ -167,115 +134,31 @@ void diagnose( double ttt, double t00, int it, int itmax,
     }
   eno = enn;
 
-  // グローバルエネルギー時系列出力:
-  f = fopen("eng.dat","a");
-  if (ttt>0.) fprintf(f,"%.8f  %.6e  %.6e  %.6e  %.6e  %.6e\n",
-              ttt, enn, eeb, ezf, (enn+eeb), ezf/eeb);
-  fclose(f);
-  // グローバルエネルギー転送時系列出力:
-  f = fopen("eng-transfer.dat","a");
-  if (ttt>0.) fprintf(f,"%.8f  %.6e  %.6e  %.6e  %.6e\n",
-              ttt, etran_grad, etran_adia, etran_visc, etran_tot);
-  fclose(f);
-  // グローバル輸送時系列出力:
-  f = fopen("fne.dat","a");
-  if (ttt>0.) fprintf(f,"%.8f  %.6e\n", ttt, fne);
-  fclose(f);
+   // グローバルエネルギー時系列出力と輸送時系列出力
+  write_global_outputs(ttt, enn, eeb, ezf, etran_grad, etran_adia, etran_visc, etran_tot, fne);
 
   // (非)線形成長率 "grow" と線形周波数推定 "freq":
-  if (incon==5.) {
-    // (近似) 線形ドリフト波周波数 freq を計算する
-
-    double dt_amp = 0.;
-    freq = 0.; grow = 0.;
-    jsgn_old = jsgn;
-    if (p_p[nxh][nyh]==fabs(p_p[nxh][nyh])) {jsgn = 1;} else {jsgn = -1;};
-
-    if (jsgn != jsgn_old) {t_old = t_amp; t_amp = ttt;};
-    dt_amp = t_amp - t_old;
-    if ( (dt_amp !=0.) && (dt_amp != ddtt) && (it>2) )  freq = 0.5*TwoPi/dt_amp;
-
-  }
-
-  if (enwo == 1.e-12) enwo = enw;
-  grow = (sqrt(enw)-sqrt(enwo))/(sqrt(enwo)*ddtt);
-  enwo = enw;
-  f = fopen("gamma.dat","a");
-  if (it>1) fprintf(f,"%.3f  %.6e  %.6e\n", ttt, freq, grow);
-  fclose(f);
+  calculate_linear_growth_and_frequency(ttt, dt, it, itmax, incon,
+                                        freq, grow,
+                                        p_p, t_amp, t_old, jsgn, jsgn_old,
+                                        ddtt, enw, enwo, nxh, nyh);
 
   // プロット出力
 
   // 帯状流 (t,x) 2D プロット
-  h = fopen( "zfx.dat", "a" );
-  for (i=0; i<=nx1; i++)  {
-    im = (i==0)   ? nx1 : i-1;
-    ip = (i==nx1) ? 0   : i+1;
-    for (zfx=0., j=0; j<=ny1; j++)  {
-      // zfx += p_p[i][j]/(ny); // 帯状ポテンシャル
-      zfx += p_p[ip][j]-p_p[im][j]; // 帯状流 <Vy>
-    }
-    zfx *= .5*hy/(ny); // pot または vor. の場合はコメントアウト
-    if (ttt>0.) fprintf(h,"%.3f  %d  %.6e \n", ttt,i,zfx);
-  }
-  fprintf(h,"\n");
-  fclose(h);
+  write_zonal_flow_data(ttt, p_p, nx1, ny1, hy);
 
   // y=ny/2 での x-カット:
-  g = fopen( "cutx.dat", "w" );
-  for (i=0; i<=nx1; i++)
-    for (j=nyh; j<=nyh; j++)
-      fprintf(g,"%f  %.6e   %.6e   %.6e   %.6e   %.6e\n",
-          double(i)/hy,n_e[i][j],n_i[i][j], p_p[i][j],lap[i][j],n_g[i][j]);
-  fclose( g );
+  write_x_cut_data(n_e, n_i, p_p, lap, n_g, nx1, nyh, hy);
 
-  g = fopen( "cuty.dat", "w" );
-  for (j=0; j<=ny1; j++)
-      fprintf(g,"%f  %.6e   %.6e   %.6e   %.6e   %.6e\n",
-          double(j)/hy,n_e[nxh][j],n_i[nxh][j], p_p[nxh][j],lap[nxh][j],n_g[nxh][j]);
-  fclose( g );
+  // x=nx/2 での y-カット:
+  write_y_cut_data(n_e, n_i, p_p, lap, n_g, ny1, nxh, hy);
 
   // y で平均された x プロファイル:
-  g = fopen( "xprof.dat", "w" );
-  double peprof, neprof, niprof, nsprof, wwprof;
-  double pexprof[nxm];
-  for (i=0; i<=nx1; i++) {
-    peprof = 0.; neprof = 0.; niprof = 0.; nsprof = 0.; wwprof=0.; rey = 0.;
-    im = (i==0)   ? nx1 : i-1;
-    ip = (i==nx1) ? 0   : i+1;
-    for (j=0; j<=ny1; j++) {
-      jm = (j==0)   ? ny1 : j-1;
-      jp = (j==ny1) ? 0   : j+1;
-      // レイノルズ応力:
-      rey+= .25*hy*hy*(p_p[ip][j]-p_p[im][j])*(p_p[i][jp]-p_p[i][jm]);
-      // ポテンシャル、密度、渦度
-      peprof += p_p[i][j];
-      neprof += n_e[i][j];
-      niprof += n_i[i][j];
-      wwprof += lap[i][j];
-    }
-    peprof/=ny; neprof/=ny; niprof/=ny; nsprof/=ny; wwprof/=ny; rey/=ny;
-    fprintf(g,"%f  %.6e   %.6e   %.6e   %.6e   %.6e\n",
-        double(i)/hy,peprof,neprof,niprof,wwprof,rey);
-  }
-  fclose( g );
+  write_x_profile_data(p_p, n_e, n_i, lap, nx1, ny1, hy, ny);
 
   // 密度、渦度、ポテンシャルの 2D (x,y) プロット
-  g1 = fopen( "n2d0.dat", "w" ); g2 = fopen( "w2d0.dat", "w" );
-  g3 = fopen( "p2d0.dat", "w" ); g4 = fopen( "i2d0.dat", "w" );
-  for (i=0; i<=nx1; i++) {
-    for (j=0; j<=ny1; j++) {
-      fprintf(g1,"%d  %d  %.6e\n",i,j,n_e[i][j]);
-      fprintf(g2,"%d  %d  %.6e\n",i,j,lap[i][j]);
-      fprintf(g3,"%d  %d  %.6e\n",i,j,p_p[i][j]);
-      fprintf(g4,"%d  %d  %.6e\n",i,j,(p_p[i][j]-n_e[i][j]));
-    }
-    fprintf(g1,"\n"); fprintf(g2,"\n"); fprintf(g3,"\n");
-    fprintf(g4,"\n");
-  }
-  fclose( g1 ); fclose( g2 ); fclose( g3 ); fclose( g4 );
-  rename("n2d0.dat", "n2d.dat"); rename("w2d0.dat", "w2d.dat");
-  rename("p2d0.dat", "p2d.dat"); rename("i2d0.dat", "i2d.dat");
+  write_2d_plot_data(n_e, p_p, lap, nx1, ny1);
 
   // フーリエ ky スペクトル
   double py[ny];
