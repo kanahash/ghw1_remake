@@ -83,6 +83,16 @@ extern char *wisdom_sf;
 
 extern bool printtraces, b_mhw, b_4th;
 
+// ghw1.hpp
+extern unsigned int fflag;
+extern int nx, ny, nxh, nyh, nx1, ny1, ict, jct;
+// ... 他の変数の extern 宣言 ...
+extern double pkxavg[]; // 配列のサイズはここで必須ではないが、もし固定サイズなら含めても良い
+extern AXY pe, pi, ww;
+// ... 他のAXY型の extern 宣言 ...
+extern char *wisdom_sf;
+extern bool printtraces, b_mhw, b_4th;
+
 // 関数プロトタイプ
 void init_parameters(void);
 void init_add_blob(AXY ne, AXY ni);
@@ -262,6 +272,40 @@ void calculate_linear_growth_and_frequency(double ttt, double dt, int it, int it
                                            double& freq, double& grow,
                                            AXY p_p, double& t_amp, double& t_old, int& jsgn, int& jsgn_old,
                                            double& ddtt, double& enw, double& enwo, int nxh, int nyh);
+
+//calculate_and_write_ky_spectrum.cpp										   
+void	calculate_and_write_ky_spectrum(double AXY_data[nxm][nym],
+		const char *filename, fftw_plan hindfty, double *py_array,
+		fftw_complex *ky_array, double *sumky_array, double *avgky_array,
+		int nx1, int ny1, int ny, int nx, int incon, int it);
+
+//calculate_and_write_energy_ky_spectrum.cpp
+void	calculate_and_write_energy_ky_spectrum(const AXY p_p,
+		const char *filename, fftw_plan hindfty, double *py_array,
+		fftw_complex *ky_array, double *sumky_array, double *pkyavge_array,
+		int nx1, int ny1, int ny, int nx, double hy, double TwoPi, double ly,
+		int incon, int it);
+
+//calculate_and_write_kx_spectrum.cpp
+void	calculate_and_write_kx_spectrum(const AXY pe_data, const char *filename,
+		int nx1, int ny1, int nx, int ny, double hy, double TwoPi, double ly,
+		int incon, int it, double *pkxavg_array);
+
+//diagnose.cpp
+void diagnose( double ttt, double t00, int it, int itmax,
+           AXY n_n, AXY n_e, AXY n_i, AXY p_p, AXY n_g );
+
+//arakawa.cpp
+void arakawa( AXY uuu, AXY vvv, AXY out );
+
+//arakaw4.cpp
+void arakaw4( AXY uuu, AXY vvv, AXY out );
+
+//laplace.cpp
+void laplace( AXY fi, AXY fo );
+
+//poisson.cpp
+void poisson( AXY fi, AXY cp, AXY fo );
 
 //utils
 //utils_time.cpp
