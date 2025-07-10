@@ -21,6 +21,10 @@ static void hyper_viscosity_calculate(AXY density, AXY hyv_out, AXY vis_tmp,
                                fftw_plan hinp, fftw_plan herp, double wwx[][nym], double wwk[][nym/2+1][2],
                                const AXY chyv, int ihype, int nx1, int ny1, int nyp) 
 {
+    int i;
+    int j;
+    int k_idx;
+
     if (ihype == -1)
 	{ // del^p を (p/2) ラプラス演算子で評価する
         laplace(density, hyv_out);
@@ -34,20 +38,20 @@ static void hyper_viscosity_calculate(AXY density, AXY hyv_out, AXY vis_tmp,
 	{ // del^p の FFT を k^p として評価する: 推奨 (p==2)
         // データコピー
         #pragma omp parallel for private(j)
-        for (int i = 0; i <= nx1; ++i)
+        for (i = 0; i <= nx1; ++i)
 		{
-            for (int j = 0; j <= ny1; ++j)
+            for (j = 0; j <= ny1; ++j)
                 wwx[i][j] = density[i][j];
         }
         fftw_execute(hinp); // 順方向FFTを実行
 
         // 周波数空間での操作
         #pragma omp parallel for private(j, k_idx) // k_idx: FFTW配列の複素数成分インデックス (実部/虚部)
-        for (int i = 0; i <= nx1; ++i)
+        for (i = 0; i <= nx1; ++i)
 		{
-            for (int j = 0; j <= nyp - 1; ++j)
+            for (j = 0; j <= nyp - 1; ++j)
 			{
-                for (int k_idx = 0; k_idx <= 1; k_idx++)
+                for (k_idx = 0; k_idx <= 1; k_idx++)
                     wwk[i][j][k_idx] *= chyv[i][j]; // 周波数空間で係数を乗算
             }
         }
@@ -55,9 +59,9 @@ static void hyper_viscosity_calculate(AXY density, AXY hyv_out, AXY vis_tmp,
 
         // 結果をコピー
         #pragma omp parallel for private(j)
-        for (int i = 0; i <= nx1; ++i)
+        for (i = 0; i <= nx1; ++i)
 		{
-            for (int j = 0; j <= ny1; ++j)
+            for (j = 0; j <= ny1; ++j)
                 hyv_out[i][j] = wwx[i][j];
         }
     }

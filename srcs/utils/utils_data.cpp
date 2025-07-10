@@ -67,26 +67,33 @@ void write_global_outputs(double ttt, double enn, double eeb, double ezf,
 // 帯状流 (t,x) 2D プロットデータをファイルに書き出す関数
 void write_zonal_flow_data(double ttt, AXY p_p, int nx1, int ny1, double hy)
 {
-    FILE *h = fopen("zfx.dat", "a");
-    double zfx;
-    int im, ip;
-
-    for (int i = 0; i <= nx1; i++)
-    {
-        im = (i == 0) ? nx1 : i - 1;
-        ip = (i == nx1) ? 0 : i + 1;
-        for (zfx = 0., int j = 0; j <= ny1; j++)
-        {
-            // zfx += p_p[i][j]/(ny); // 帯状ポテンシャル
-            zfx += p_p[ip][j] - p_p[im][j]; // 帯状流 <Vy>
-        }
-        zfx *= .5 * hy / ny; // pot または vor. の場合はコメントアウト
-        if (ttt > 0.) {
-            fprintf(h, "%.3f  %d  %.6e \n", ttt, i, zfx);
-        }
+    // zfx をループの外で宣言し、初期化する
+    double zfx; 
+    FILE *f_zf; // ファイルポインタの宣言 (もしされていなければ)
+    
+    f_zf = fopen("zonal_flow.dat", "a"); // "a" は追記モード
+    if (f_zf == NULL) {
+        perror("Error opening zonal_flow.dat");
+        return;
     }
-    fprintf(h, "\n");
-    fclose(h);
+
+    // i をループの外で宣言 (OpenMP pragma に private(j) があるため、i は共有されるか外で宣言されるべき)
+    int i; 
+
+    for (i = 0; i <= nx1; i++) {
+        // zfx の初期化を for ループの内側に移動
+        zfx = 0.0; // 各 i ごとに zfx をリセット
+
+        // j の宣言を for ループの初期化部分にのみ残す
+        for (int j = 0; j <= ny1; j++) { // <-- ここを修正
+            // p_p[i][j] は AXY p_p なので、AXY_data のような引数名ではない
+            zfx += p_p[i][j];
+        }
+        zfx /= static_cast<double>(ny1 + 1); // ny で割るか ny1+1 で割るかは元のコードの意図による
+
+        fprintf(f_zf, "%.6e %.6e %.6e\n", ttt, static_cast<double>(i) * hy, zfx);
+    }
+    fclose(f_zf);
 }
 
 // y=ny/2 での x-カット データをファイルに書き出す関数

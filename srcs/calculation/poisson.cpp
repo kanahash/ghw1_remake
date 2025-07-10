@@ -1,8 +1,8 @@
-#include "ghw1.cpp"
+#include "ghw1.hpp"
 
 // FFT "ポアソン方程式" ソルバー: del^2y = x の y を k 空間で解く
 // cp で定義された一般的な引数を持つ (純粋なポアソン問題だけでなく)。
-void poisson( AXY fi, AXY cp, AXY fo )
+void poisson( AXY fi, const AXY cp, AXY fo )
 {
   int i,j,k;
   int nyp = ny/2+1;

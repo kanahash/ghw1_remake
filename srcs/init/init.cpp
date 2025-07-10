@@ -26,12 +26,14 @@ void init_FFTW(int nx, int ny, unsigned int fflag, int npar,
 void init_energy(AXY ne, double xyz, double& eno)
 {
     eno = 0.; // エネルギーの初期化
+    int i;
+    int j;
     
     // OpenMP を使って eno を並列計算
     #pragma omp parallel for private(i,j) reduction (+:eno)
-    for (int i = 0; i <= nx1; i++)
+    for (i = 0; i <= nx1; i++)
 	{
-        for (int j = 0; j <= ny1; j++)
+        for (j = 0; j <= ny1; j++)
             eno += exp(2. * ne[i][j]);
     }
     eno *= .5 * xyz; // 最終的なエネルギー値の計算

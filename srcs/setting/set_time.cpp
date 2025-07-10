@@ -6,10 +6,13 @@ void init_history_density(AXY ne, AXY ni,
                                 AXY& ni0, AXY& ni1, AXY& ni2,
                                 AXY& fne1, AXY& fne2, AXY& fni1, AXY& fni2)
 {
+    int i;
+    int j;
+
     #pragma omp parallel for private(i,j) // OpenMP による並列化
-    for (int i = 0; i <= nx1; ++i)
+    for (i = 0; i <= nx1; ++i)
 	{
-        for (int j = 0; j <= ny1; ++j)
+        for (j = 0; j <= ny1; ++j)
 		{
             // 現在の密度を履歴にコピー
             ne0[i][j] = ne[i][j];

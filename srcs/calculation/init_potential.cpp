@@ -2,7 +2,7 @@
 
 // 初期ポテンシャルを計算する関数
 void init_potentials(AXY ni, AXY ne, AXY& pe, AXY& gni, AXY& ww, 
-                                const AXY cpoti, const AXY cvort,
+                                AXY cpoti, AXY cvort,
                                 double aae, double aai)
 {
     // ni からジャイロ遮蔽イオン密度 gni を計算する

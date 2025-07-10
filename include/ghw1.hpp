@@ -1,5 +1,5 @@
-#ifndef GHW1_HPP // ヘッダーガード: GHW1_H が定義されていなければ、以下の内容を処理する
-#define GHW1_HPP // GHW1_H を定義して、二重インクルードを防ぐ
+#ifndef GHW1_HPP // ヘッダーガード: GHW1_HPP が定義されていなければ、以下の内容を処理する
+#define GHW1_HPP // GHW1_HPP を定義して、二重インクルードを防ぐ
 
 // ライブラリのインクルード: 標準的なLinuxディストリビューションで利用可能 (テスト済み: OpenSuse)
 #ifdef _OPENMP // OpenMP が有効な場合
@@ -7,39 +7,37 @@
 #endif
 
 // maxtraceの最大値を仮に MAX_TRACE_STEPS として定義
-#define MAX_TRACE_K_MAX_SQRT 8 // kt_maxsqrt
-#define MAX_TRACE_STEPS 1000 // maxtrace の上限値に合わせて設定
-
-// MAX_TRACE_K_MAX_SQRT と MAX_TRACE_STEPS は、collect_time_trace_data の定義で使用したものを再利用
-#define MAX_TRACE_K_MAX_SQRT 8
-#define MAX_TRACE_STEPS 1000
-
-// trace_n と trace_p はグローバル変数であると仮定（または main で宣言し、ポインタで渡す）
-static double trace_n_global[MAX_TRACE_K_MAX_SQRT * MAX_TRACE_K_MAX_SQRT][MAX_TRACE_STEPS];
-static double trace_p_global[MAX_TRACE_K_MAX_SQRT * MAX_TRACE_K_MAX_SQRT][MAX_TRACE_STEPS];
-
-
-#include <iostream> // C++の入出力ストリーム (例: cout, cin)
-#include <cstdio>   // C++スタイルの C標準入出力ヘッダー (stdio.h に対応)
-#include <cstdlib>  // C++スタイルの C標準ユーティリティヘッダー (stdlib.h に対応)
-#include <cmath>    // C++スタイルの C標準数学関数ヘッダー (math.h に対応)
-#include <cstring>  // C++スタイルの C文字列関数ヘッダー (string.h に対応)
-#include <fftw3.h>  // FFTW (Fastest Fourier Transform in the West) ライブラリ
-#include <stdbool.h>
-
-// 静的定数の定義:
-const static double TwoPi = 2. * M_PI, r12 = 1. / 12.; // 円周率の2倍と1/12
-
-// nxm, nym: 配列を初期化するための最大 nx および ny サイズ:
-const static int nxm = 512 + 2, nym = 512 + 2; // nx + 2 = 2^n + 2 はFFTに理想的
-
-// 時間トレース記録点の数 (例: 各x軸とy軸あたり8点):
-const static int kt_maxsqrt = 8;
+#define MAX_TRACE_K_MAX_SQRT 8   // kt_maxsqrt
+#define MAX_TRACE_STEPS 1000     // maxtrace の上限値に合わせて設定
+#define KMAX_VAL        100      // 例：k_max の最大値
+#define MAXTRACE_VAL    500      // 例：maxtrace の最大値
 
 // グローバル変数として宣言された ffalg。その定義（および初期化）は .cpp ファイルにある必要があります。
 extern unsigned int fflag;
 
+// nxm, nym: 配列を初期化するための最大 nx および ny サイズ:
+const static int nxm = 512 + 2, nym = 512 + 2; // nx + 2 = 2^n + 2 はFFTに理想的
+
 typedef double AXY[nxm][nym]; // 2D配列 AXY を double 型の nxm x nym 配列として定義
+
+// trace_n と trace_p はグローバル変数であると仮定（または main で宣言し、ポインタで渡す）
+// ghw1.hpp では extern 宣言のみとし、main.cpp または別の .cpp ファイルで定義する
+extern double trace_n_global[MAX_TRACE_K_MAX_SQRT * MAX_TRACE_K_MAX_SQRT][MAX_TRACE_STEPS];
+extern double trace_p_global[MAX_TRACE_K_MAX_SQRT * MAX_TRACE_K_MAX_SQRT][MAX_TRACE_STEPS];
+
+#include <iostream>  // C++の入出力ストリーム (例: cout, cin)
+#include <cstdio>    // C++スタイルの C標準入出力ヘッダー (stdio.h に対応)
+#include <cstdlib>   // C++スタイルの C標準ユーティリティヘッダー (stdlib.h に対応)
+#include <cmath>     // C++スタイルの C標準数学関数ヘッダー (math.h に対応)
+#include <cstring>   // C++スタイルの C文字列関数ヘッダー (string.h に対応)
+#include <fftw3.h>   // FFTW (Fastest Fourier Transform in the West) ライブラリ
+#include <stdbool.h> // bool 型のサポート (C++では不要な場合もあるが互換性のため)
+
+// 静的定数の定義:
+const static double TwoPi = 2. * M_PI, r12 = 1. / 12.; // 円周率の2倍と1/12
+
+// 時間トレース記録点の数 (例: 各x軸とy軸あたり8点):
+const static int kt_maxsqrt = 8; // kt_maxsqrt は const static で定義されているので、extern宣言は不要
 
 // 'extern' で宣言されたグローバル変数。これらは1つの .cpp ファイルで定義されます。
 extern int nx, ny, nxh, nyh, nx1, ny1, ict, jct;
@@ -83,37 +81,28 @@ extern char *wisdom_sf;
 
 extern bool printtraces, b_mhw, b_4th;
 
-// ghw1.hpp
-extern unsigned int fflag;
-extern int nx, ny, nxh, nyh, nx1, ny1, ict, jct;
-// ... 他の変数の extern 宣言 ...
-extern double pkxavg[]; // 配列のサイズはここで必須ではないが、もし固定サイズなら含めても良い
-extern AXY pe, pi, ww;
-// ... 他のAXY型の extern 宣言 ...
-extern char *wisdom_sf;
-extern bool printtraces, b_mhw, b_4th;
+// ghw1.hppの重複するextern宣言を削除
+// extern unsigned int fflag; // 重複
+// extern int nx, ny, nxh, nyh, nx1, ny1, ict, jct; // 重複
+// extern double pkxavg[]; // 重複 - サイズ指定ありのものを優先
+// extern AXY pe, pi, ww; // 重複
+// extern char *wisdom_sf; // 重複
+// extern bool printtraces, b_mhw, b_4th; // 重複
 
-// 関数プロトタイプ
-void init_parameters(void);
-void init_add_blob(AXY ne, AXY ni);
-void init_add_turb(AXY ne, AXY ni);
-void init_add_dual(AXY ne, AXY ni);
-void init_add_flow(AXY ne, AXY ni);
-void init_add_mode(AXY ne, AXY ni);
+// **** インライン関数定義 (定義はここにあり、プロトタイプだけではありません) ****
+// DFDY や DFDX が nextp を呼び出す前に定義する必要があるため、ここに配置
+inline void nextp(int i, int i0, int i1, int &im, int &ip, int &im2, int &ip2)
+{
+    im = (i == i0) ? i1 : i - 1;
+    im2 = (i == i0 + 1) ? i1 : i - 2;
+    if (i == i0)
+        im2 = i1 - 1;
+    ip = (i == i1) ? i0 : i + 1;
+    ip2 = (i == i1 - 1) ? i0 : i + 2;
+    if (i == i1)
+        ip2 = i0 + 1;
+}
 
-void arakawa(AXY uuu, AXY vvv, AXY www);
-void arakaw4(AXY uuu, AXY vvv, AXY www);
-void poisson(AXY pe, AXY cp, AXY pz);
-void laplace(AXY pp, AXY ww);
-void diagnose(double ttt, double t00, int it, int itmax,
-              AXY nn, AXY ne, AXY ni, AXY pp, AXY gni);
-
-// グローバル変数として定義されていると仮定
-extern double trace_n[/* k_max の最大値に対応するサイズ */][/* maxtrace の最大値に対応するサイズ */];
-extern double trace_p[/* k_max の最大値に対応するサイズ */][/* maxtrace の最大値に対応するサイズ */];
-extern const int kt_maxsqrt; // ghw1.hpp で定義されていると仮定
-
-// インライン関数定義 (定義はここにあり、プロトタイプだけではありません)
 inline double DFDY(AXY ain, int i, int j)
 {
     int jm, jp, jm2, jp2;
@@ -140,18 +129,6 @@ inline double DFDX(AXY ain, int i, int j)
     {
         return (hy * .5 * (ain[ip][j] - ain[im][j]));
     };
-}
-
-inline void nextp(int i, int i0, int i1, int &im, int &ip, int &im2, int &ip2)
-{
-    im = (i == i0) ? i1 : i - 1;
-    im2 = (i == i0 + 1) ? i1 : i - 2;
-    if (i == i0)
-        im2 = i1 - 1;
-    ip = (i == i1) ? i0 : i + 1;
-    ip2 = (i == i1 - 1) ? i0 : i + 2;
-    if (i == i1)
-        ip2 = i0 + 1;
 }
 
 inline void f_copy2darray(AXY arrinp, AXY arrout, int iend, int jend)
@@ -187,53 +164,53 @@ inline double timer_stop(double t_1)
     return (t_2 - t_1);
 }
 
-
-//init
-//init.cpp
+// 関数プロトタイプ
+// init.cpp
+void init_parameters(void);
+void init_add_blob(AXY ne, AXY ni);
+void init_add_turb(AXY ne, AXY ni);
+void init_add_dual(AXY ne, AXY ni);
+void init_add_flow(AXY ne, AXY ni);
+void init_add_mode(AXY ne, AXY ni);
 void init_FFTW(int nx, int ny, unsigned int fflag, int npar,
-                    fftw_plan& hinp, fftw_plan& herp, char*& wisdom_sf);
+               fftw_plan& hinp, fftw_plan& herp, char*& wisdom_sf);
 void init_energy(AXY ne, double xyz, double& eno);
 int init_time_stepping(int itstp, int itmax, double dt, double cf,
-                           int& itn, int& itend, double& dtt, double& ddtt,
-                           int& itrace, int& jtrace);
-void init_add_blob( AXY ne, AXY ni );
-void init_add_dual( AXY ne, AXY ni );
-void init_add_flow( AXY ne, AXY ni );
-void init_add_mode( AXY ne, AXY ni );
+                       int& itn, int& itend, double& dtt, double& ddtt,
+                       int& itrace, int& jtrace);
 //init_output_and_arrays.cpp
 void init_output_and_arrays(int nx, int ny, int incon, bool printtraces);
-//init_parameters.cpp
-void init_parameters(void);
-//init_add_turb.cpp
-void init_add_turb( AXY ne, AXY ni );
+// init_parameters.cpp (重複)
+// void init_parameters(void);
+//init_add_turb.cpp (重複)
+// void init_add_turb( AXY ne, AXY ni );
 
-//ghw1.cpp
-//main.cpp
+//main.cpp (コメント)
 
 //setting
 //set_init_density.cpp
 void set_init_density_perturbation(int incon, AXY ne, AXY ni);
 //set_time.cpp
 void init_history_densities(AXY ne, AXY ni, 
-                                AXY& ne0, AXY& ne1, AXY& ne2,
-                                AXY& ni0, AXY& ni1, AXY& ni2,
-                                AXY& fne1, AXY& fne2, AXY& fni1, AXY& fni2) ;
+                                 AXY& ne0, AXY& ne1, AXY& ne2,
+                                 AXY& ni0, AXY& ni1, AXY& ni2,
+                                 AXY& fne1, AXY& fne2, AXY& fni1, AXY& fni2);
 //set_trace.cpp
 void set_trace_output_locations(int nx1, int ny1, int kt_maxsqrt, 
-                               int iout[], int jout[], int& k_max);
+                                 int iout[], int jout[], int& k_max);
 
 //calculation
 //init_potential.cpp
 void init_potentials(AXY ni, AXY ne, AXY& pe, AXY& gni, AXY& ww, 
-                                const AXY cpoti, const AXY cvort,
-                                double aae, double aai);
+                                 AXY cpoti, AXY cvort,
+                                 double aae, double aai);
 //density_time_evolution_step.cpp
 void update_densities_one_time_step(double ttt, double dt, AXY ne, AXY ni, AXY pe, AXY pi, AXY ane, AXY ani,
                                      AXY hyve, AXY hyvi, AXY vis_e, AXY vis_i,
                                      fftw_plan hinp, fftw_plan herp, double wwx[][nym], double wwk[][nym/2+1][2],
                                      const AXY chyv_coeff, bool use_4th_order, int ihype_mode, int nx_max, int ny_max, int ny_padded);
 
-//gyro_averate_calculate.cpp
+//gyro_average_calculate.cpp
 void gyro_averaged_ion_density_calculate(AXY ni_in, AXY gni_out, fftw_plan hinp, fftw_plan herp,
                                          double wwx[][nym], double wwk[][nym/2+1][2],
                                          const AXY cpoti_coeff, double taui_param,
@@ -269,27 +246,27 @@ void calculate_energies_and_transport(double& enn, double& enp, double& enw, dou
 
 //linear_growth_and_frequency_calculate.cpp
 void calculate_linear_growth_and_frequency(double ttt, double dt, int it, int itmax, int incon,
-                                           double& freq, double& grow,
-                                           AXY p_p, double& t_amp, double& t_old, int& jsgn, int& jsgn_old,
-                                           double& ddtt, double& enw, double& enwo, int nxh, int nyh);
+                                            double& freq, double& grow,
+                                            AXY p_p, double& t_amp, double& t_old, int& jsgn, int& jsgn_old,
+                                            double& ddtt, double& enw, double& enwo, int nxh, int nyh);
 
-//calculate_and_write_ky_spectrum.cpp										   
-void	calculate_and_write_ky_spectrum(double AXY_data[nxm][nym],
-		const char *filename, fftw_plan hindfty, double *py_array,
-		fftw_complex *ky_array, double *sumky_array, double *avgky_array,
-		int nx1, int ny1, int ny, int nx, int incon, int it);
+//calculate_and_write_ky_spectrum.cpp
+void calculate_and_write_ky_spectrum(double AXY_data[nxm][nym],
+        const char *filename, fftw_plan hindfty, double *py_array,
+        fftw_complex *ky_array, double *sumky_array, double *avgky_array,
+        int nx1, int ny1, int ny, int nx, int incon, int it);
 
 //calculate_and_write_energy_ky_spectrum.cpp
-void	calculate_and_write_energy_ky_spectrum(const AXY p_p,
-		const char *filename, fftw_plan hindfty, double *py_array,
-		fftw_complex *ky_array, double *sumky_array, double *pkyavge_array,
-		int nx1, int ny1, int ny, int nx, double hy, double TwoPi, double ly,
-		int incon, int it);
+void calculate_and_write_energy_ky_spectrum(const AXY p_p,
+        const char *filename, fftw_plan hindfty, double *py_array,
+        fftw_complex *ky_array, double *sumky_array, double *pkyavge_array,
+        int nx1, int ny1, int ny, int nx, double hy, double TwoPi, double ly,
+        int incon, int it);
 
 //calculate_and_write_kx_spectrum.cpp
-void	calculate_and_write_kx_spectrum(const AXY pe_data, const char *filename,
-		int nx1, int ny1, int nx, int ny, double hy, double TwoPi, double ly,
-		int incon, int it, double *pkxavg_array);
+void calculate_and_write_kx_spectrum(const AXY pe_data, const char *filename,
+        int nx1, int ny1, int nx, int ny, double hy, double TwoPi, double ly,
+        int incon, int it, double *pkxavg_array);
 
 //diagnose.cpp
 void diagnose( double ttt, double t00, int it, int itmax,
@@ -305,7 +282,7 @@ void arakaw4( AXY uuu, AXY vvv, AXY out );
 void laplace( AXY fi, AXY fo );
 
 //poisson.cpp
-void poisson( AXY fi, AXY cp, AXY fo );
+void poisson( AXY fi, const AXY cp, AXY fo );
 
 //utils
 //utils_time.cpp
@@ -332,6 +309,6 @@ void write_x_profile_data(AXY p_p, AXY n_e, AXY n_i, double lap[][nym],
                           int nx1, int ny1, double hy, int ny);
 void write_2d_plot_data(AXY n_e, AXY p_p, double lap[][nym], int nx1, int ny1);
 
-int	main(void);
+int main(void); // main関数のプロトタイプ宣言
 
-#endif // GHW1_H
+#endif // GHW1_HPP
