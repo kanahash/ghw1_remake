@@ -154,7 +154,7 @@ int main(void)
     init_potentials(ni, ne, pe, gni, ww, cpoti, cvort, aae, aai); // init_potentials は ghw1.hpp でプロtoタイプ宣言済み
 
     // 人為的な「以前の」時間値を設定する (多段ソルバー用) (関数名修正)
-    init_history_densities(ne, ni, ne0, ne1, ne2, ni0, ni1, ni2, fne1, fne2, fni1, fni2); // init_history_densities は ghw1.hpp でプロトタイプ宣言済み
+    init_history_density(ne, ni, ne0, ne1, ne2, ni0, ni1, ni2, fne1, fne2, fni1, fni2); // init_history_densities は ghw1.hpp でプロトタイプ宣言済み
 
     // エネルギーを初期化する:
     init_energy(ne, xyz, eno); // init_energy は ghw1.hpp でプロトタイプ宣言済み

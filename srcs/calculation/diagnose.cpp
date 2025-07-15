@@ -3,15 +3,14 @@
 // 出力量を計算し書き出す:
 // 例: エネルギー、輸送、k スペクトル、2D 配列、プロファイルなど
 void diagnose( double ttt, double t00, int it, int itmax,
-           AXY n_n, AXY n_e, AXY n_i, AXY p_p, AXY n_g )
+               AXY n_n, AXY n_e, AXY n_i, AXY p_p, AXY n_g )
 {
   int i,j, ik, im,ip,jm,jp;
   double enn, enp, enw, eeb, ezf, fne, fnsol, zfx, dum, rey, freq, grow;
   double etran_grad, etran_adia, etran_visc;
-  double lap[nxm][nym];
+  // ★この行が、この正確な位置にあることを確認してください★
+  double lap[nxm][nym]; // lap の宣言
   double avg[nxm], avp[nxm];
-  // g3, g4, g5, g6, g7, g8 は FILE* 型として正しく宣言する必要があります。
-  // 現在は g3 が FILE* 型になっていないため、エラーにつながる可能性があります。
   FILE *f, *g, *h, *g1, *g2, *g3, *g4, *g5, *g6, *g7, *g8;
 
 
@@ -97,33 +96,37 @@ void diagnose( double ttt, double t00, int it, int itmax,
   hindfty = fftw_plan_dft_r2c_1d(ny, &py[0], &ky[0], FFTW_ESTIMATE);
 
 // ポテンシャル phi
-  calculate_and_write_ky_spectrum(p_p, "pky_p.dat",
-                                   hindfty, py, ky,
-                                   sumky[0], pkyavg, // sumkyとpkyavgは適切な次元で渡す
-                                   nx1, ny1, ny, nx, incon, it);
-
+    calculate_and_write_ky_spectrum(p_p, "pky_p.dat",
+                                     hindfty, py, ky,
+                                     sumky[0], pkyavg,
+                                     nx1, ny1, ny, nx,
+                                     hy, TwoPi, ly,
+                                     incon, it);
   // 密度 ne
-  calculate_and_write_ky_spectrum(n_e, "pky_n.dat",
-                                   hindfty, py, ky,
-                                   sumky[0], pkyavgn,
-                                   nx1, ny1, ny, nx, incon, it);
+   calculate_and_write_ky_spectrum(n_e, "pky_n.dat",
+                                     hindfty, py, ky,
+                                     sumky[0], pkyavgn,
+                                     nx1, ny1, ny, nx,
+                                     hy, TwoPi, ly,
+                                     incon, it);
 
   // 渦度 w
   // 渦度はky[j][0]*ky[j][0]を使うので、別途引数を追加するか、
   // 関数を2種類作るか、内部で条件分岐させる必要があります。
   // ここでは簡単な例としてfabsを仮定しています。
-  calculate_and_write_ky_spectrum(lap, "pky_w.dat",
-                                   hindfty, py, ky,
-                                   sumky[0], pkyavgw,
-                                   nx1, ny1, ny, nx, incon, it);
-
+    calculate_and_write_ky_spectrum(lap, "pky_w.dat",
+                                     hindfty, py, ky,
+                                     sumky[0], pkyavgw,
+                                     nx1, ny1, ny, nx,
+                                     hy, TwoPi, ly,
+                                     incon, it);
   // 運動エネルギー E
-  calculate_and_write_energy_ky_spectrum(p_p, "pky_e.dat",
-                                          hindfty, py, ky,
-                                          sumky[0], pkyavge, // sumkyとpkyavgeは適切な次元で渡す
-                                          nx1, ny1, ny, nx,
-                                          hy, TwoPi, ly,
-                                          incon, it);
+calculate_and_write_energy_ky_spectrum(p_p, "pky_e.dat",
+                                         hindfty, py, ky,
+                                         sumky[0], pkyavge, // sumkyとpkyavgeは適切な次元で渡す
+                                         nx1, ny1, ny, nx,
+                                         hy, TwoPi, ly,
+                                         incon, it);
 
   // 他のKyスペクトル計算がすべて終わった後で、一度だけ hindfty を破棄します
   fftw_destroy_plan(hindfty);

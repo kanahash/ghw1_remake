@@ -1,6 +1,6 @@
 #include "ghw1.hpp"
 
-void	calculate_and_write_kx_spectrum(const AXY pe_data, const char *filename,
+void	calculate_and_write_kx_spectrum(const double pe_data[][514], const char *filename,
 		int nx1, int ny1, int nx, int ny, double hy, double TwoPi, double ly,
 		int incon, int it, double *pkxavg_array)
 {
